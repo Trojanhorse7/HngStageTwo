@@ -15,6 +15,6 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
   },
-  "exclude": ["dist", "prisma", "tests", "node_modules"],
+  "exclude": ["dist", "prisma", "tests", "node_modules", "**/*.test.ts"],
   "include": ["./src/**/*.ts"]
 }

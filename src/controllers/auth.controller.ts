@@ -1,28 +1,23 @@
 import { Response, Request } from "express";
-import jwt, { Secret } from 'jsonwebtoken';
-import bcrypt from "bcryptjs";
-import { prisma } from "../index";
-
-const JwtSecret =  process.env.JWT_SECRET as Secret;
+import { prisma } from "../app";
+import generateJWTToken from "../utils/generateJWToken";
+import { hashPassword, comparePasswords } from "../utils/hashPasswordAndVerify"
 
 //Register User Route
 export const registerUser = async (req: Request, res: Response) => {
   const { firstName, lastName, email, password, phone } = req.body;
 
   try {
-
     // Check if the email already exists
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
-      return res.status(400).json({
-        status: 'Bad request',
-        message: 'Email already exists',
-        statusCode: 400,
+      return res.status(422).json({
+        errors: [{ field: "email", message: "Email already exists" }],
       });
     }
 
     //Hash Password
-    const hashedPassword = await bcrypt.hash(password, 10)
+    const hashedPassword = await hashPassword(password);
 
     //Create User
     const user = await prisma.user.create({
@@ -48,7 +43,7 @@ export const registerUser = async (req: Request, res: Response) => {
     })
 
     //Create JWT Token with Secret
-    const token = jwt.sign({ userId: user.userId }, JwtSecret, { expiresIn: '1d' });
+    const token = await generateJWTToken(user.userId);
     
     res.status(201).json({
       status: 'success',
@@ -89,7 +84,7 @@ export const loginUser = async (req: Request, res: Response) => {
       });
     }
 
-    const isValid = await bcrypt.compare(password, user.password)
+    const isValid = await comparePasswords(password, user.password);
     if (!isValid) {
       return res.status(401).json({
         status: 'Bad request',
@@ -99,7 +94,7 @@ export const loginUser = async (req: Request, res: Response) => {
     }
 
     //Create JWT Token with Secret
-    const token = jwt.sign({ userId: user.userId }, JwtSecret, { expiresIn: '1d' });
+    const token = await generateJWTToken(user.userId);
 
     res.status(200).json({
       status: 'success',

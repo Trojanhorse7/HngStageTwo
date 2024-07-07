@@ -15,6 +15,6 @@ apiRouter.route("/users/:id").get(verifyUser, userDetails);
 apiRouter.route("/organisations").get(verifyUser, userOrganisationList);
 apiRouter.route("/organisations/:orgId").get(verifyUser, getParticularUserOrganisation);
 apiRouter.route("/organisations").post(verifyUser, createNewOrganisationValidate, createNewOrganisation);
-apiRouter.route("/organisations/:orgId/users").post(verifyUser, addUserToOrganisation);
+apiRouter.route("/organisations/:orgId/users").post(addUserToOrganisation);
 
 export default apiRouter;

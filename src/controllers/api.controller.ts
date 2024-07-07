@@ -1,15 +1,17 @@
 import { Response, Request } from "express";
-import { prisma } from "../index";
+import { prisma } from "../app";
 
 //Get a User Detail
 export const userDetails = async (req: Request, res: Response) => {
     const { id } = req.params;
+    const userId = (req as any).user.userId;
 
     try {
         const user = await prisma.user.findUnique({
-            where: { userId: id },
+            where: { userId: userId },
             include: { organisations: true }
         })
+        console.log(user)
     
         if (!user) {
             return res.status(404).json({
@@ -18,18 +20,56 @@ export const userDetails = async (req: Request, res: Response) => {
                 statusCode: 404,
             });
         }
-    
-        res.status(200).json({
-            status: 'success',
-            message: 'User retrieved successfully',
-            data: {
-                userId: user.userId,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                email: user.email,
-                phone: user.phone
+
+        // Check if the current user is the same as the requested user
+        if (id === userId) {
+            return res.status(200).json({
+                status: 'success',
+                message: 'User retrieved successfully',
+                data: {
+                    userId: user.userId,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    email: user.email,
+                    phone: user.phone
+                }
+            });
+        }
+
+
+        // Check if both the current user and the requested user are in the same organisation
+        const sameOrganization = await prisma.organisationUser.findFirst({
+            where: {
+                userId: id,
+                organisation: {
+                    users: {
+                        some: { userId: userId }
+                    }
+                }
             }
-        })
+        });
+
+        if (sameOrganization) {
+            return res.status(200).json({
+                status: 'success',
+                message: 'User retrieved successfully',
+                data: {
+                    userId: user.userId,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    email: user.email,
+                    phone: user.phone
+                }
+            });
+        }
+
+        // If none of the conditions match
+        return res.status(401).json({
+            status: 'Bad request',
+            message: 'Error occured, try again',
+            statusCode: 401,
+        });
+
     } catch (error) {
         res.status(401).json({
             status: 'Bad request',
