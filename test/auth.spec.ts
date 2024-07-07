@@ -25,6 +25,14 @@ const user = {
     phone: '1234567890',
 };
 
+const user2 = {
+    firstName: 'Jane',
+    lastName: 'Doe',
+    email: 'jane.doe@example.com',
+    password: 'Password@123',
+    phone: "12743645"
+};
+
 //Token Generation and Verification Unit Test
 describe('JWT Token Generation', () => {
     it('should generate a valid token with correct expiry and user details', async () => {
@@ -45,14 +53,60 @@ describe('JWT Token Generation', () => {
     });
 });
 
+//Users can't see data from organisation that thye don't have acces to
+describe('Users can’t see data from organisations they don’t have access to', () => {
+
+    it('should not allow a user to access an organization they do not belong to', async () => {
+        // Create User1
+        const res = await request(app)
+            .post('/auth/register')
+            .send(user)
+            .expect(201);
+
+        // Create User2
+        const res2 = await request(app)
+            .post('/auth/register')
+            .send(user2)
+            .expect(201);
+
+        //Get Organisation for User2 (One is created along with the creation of user)
+        const getUSer2OrganizationList = await request(app)
+            .get(`/api/organisations`)
+            .set('Authorization', `Bearer ${res2.body.data.accessToken}`)
+            .expect(200);
+
+        //An Organisation from User 2
+        const user2Org = getUSer2OrganizationList.body.data.organisations[0].orgId;
+
+        //Try to search for user2 organization Data in user1, would return error due to organization data not existing in user1
+        const response = await request(app)
+            .get(`/api/organisations/${user2Org}`)
+            .set('Authorization', `Bearer ${res.body.data.accessToken}`)
+
+        expect(response.status).toBe(404);
+        expect(response.body).toEqual({
+            status: 'failed',
+            message: 'Organisation not found',
+            statusCode: 404,
+        });
+    });
+});
+
 //POST /auth/register End To End Test
 describe('POST /auth/register', () => {
+
+    beforeAll(async () => {
+        await prisma.organisationUser.deleteMany({});
+        await prisma.organisation.deleteMany({});
+        await prisma.user.deleteMany({});
+    });
+
     it('It Should Register User Successfully with Default Organisation and check if Orgnaization Name is generated successfully', async () => {
 
         const res = await request(app)
-        .post('/auth/register')
-        .send(user)
-        .expect(201);
+            .post('/auth/register')
+            .send(user)
+            .expect(201);
 
         expect(res.body.status).toBe('success');
         expect(res.body.message).toBe('Registration successful');
@@ -67,8 +121,8 @@ describe('POST /auth/register', () => {
             },
         });
     
-            expect(organisation).not.toBeNull();
-            expect(organisation!.name).toBe("Felix's Organisation");
+        expect(organisation).not.toBeNull();
+        expect(organisation!.name).toBe("Felix's Organisation");
     });
 
     it('should fail if one required field is missing', async () => {
@@ -163,5 +217,3 @@ describe('POST /auth/register', () => {
         expect(res.body.errors[0].field).toBe('password');
     });
 });
-
-

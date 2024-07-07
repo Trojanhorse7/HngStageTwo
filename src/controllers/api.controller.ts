@@ -11,7 +11,6 @@ export const userDetails = async (req: Request, res: Response) => {
             where: { userId: userId },
             include: { organisations: true }
         })
-        console.log(user)
     
         if (!user) {
             return res.status(404).json({
@@ -115,14 +114,16 @@ export const getParticularUserOrganisation = async (req: Request, res: Response)
     const userId = (req as any).user.userId;
 
     try {
-        const organisation = await prisma.organisation.findUnique({
-            where: { orgId },
-            include: {
+        
+         // Find the organisation with the provided orgId that the user belongs to
+        const organisation = await prisma.organisation.findFirst({
+            where: {
+                orgId,
                 users: {
-                    where: { userId }
+                    some: { userId }
                 }
             }
-        })
+        });
 
         if (!organisation) {
             return res.status(404).json({
