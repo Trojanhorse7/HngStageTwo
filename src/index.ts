@@ -5,6 +5,7 @@ import { PrismaClient } from "@prisma/client";
 
 //ROUTES IMPORTS
 import authRouter from "./routes/auth.routes";
+import apiRouter from "./routes/api.routes";
 
 //SINGLE PRISMA CLIENT FOR ALL
 export const prisma = new PrismaClient();
@@ -20,6 +21,7 @@ async function main() {
 
   // API ROUTES
   app.use("/auth", authRouter);
+  app.use("/api", apiRouter);
 
   // CATCH UNREGISTERED ROUTES
   app.all("*", (req: Request, res: Response) => {

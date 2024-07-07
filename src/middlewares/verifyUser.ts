@@ -1,25 +1,34 @@
 import jwt, { Secret, JwtPayload } from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 
-export const SECRET_KEY: Secret = 'your-secret-key-here';
+const JwtSecret =  process.env.JWT_SECRET as Secret;
 
 export interface CustomRequest extends Request {
-    token: string | JwtPayload;
+    user: string | JwtPayload;
 }
 
-export const auth = async (req: Request, res: Response, next: NextFunction) => {
-try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
+const auth = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const token = req.header('Authorization')?.replace('Bearer ', '');
 
-    if (!token) {
-        throw new Error();
-    }
+        if (!token) {
+            return res.status(401).json({
+                status: 'Bad request',
+                message: 'No Auth Token',
+                statusCode: 401,
+            });
+        }
 
-    const decoded = jwt.verify(token, SECRET_KEY);
-    (req as CustomRequest).token = decoded;
-
-    next();
+        const decoded = jwt.verify(token, JwtSecret);
+        (req as CustomRequest).user = decoded;
+        next();
     } catch (err) {
-    res.status(401).send('Please authenticate');
-}
+        res.status(401).json({
+            status: 'Bad request',
+            message: 'Error occured, try again',
+            statusCode: 401,
+        });
+    }
 };
+
+export default auth;
