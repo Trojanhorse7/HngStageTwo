@@ -35,40 +35,6 @@ export const userDetails = async (req: Request, res: Response) => {
             });
         }
 
-
-        // Check if both the current user and the requested user are in the same organisation
-        const sameOrganization = await prisma.organisationUser.findFirst({
-            where: {
-                userId: id,
-                organisation: {
-                    users: {
-                        some: { userId: userId }
-                    }
-                }
-            }
-        });
-
-        if (sameOrganization) {
-            return res.status(200).json({
-                status: 'success',
-                message: 'User retrieved successfully',
-                data: {
-                    userId: user.userId,
-                    firstName: user.firstName,
-                    lastName: user.lastName,
-                    email: user.email,
-                    phone: user.phone
-                }
-            });
-        }
-
-        // If none of the conditions match
-        return res.status(401).json({
-            status: 'Bad request',
-            message: 'Error occured, try again',
-            statusCode: 401,
-        });
-
     } catch (error) {
         res.status(401).json({
             status: 'Bad request',
